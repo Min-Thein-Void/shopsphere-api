@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
+use App\Services\OrderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
+    protected $orderService;
+
+    public function __construct(OrderService $orderService)
+    {
+        $this->orderService = $orderService;
+    }
+
     public function index()
     {
         $orders = Order::with(['user', 'items.product'])->get();
@@ -31,44 +36,8 @@ class OrderController extends Controller
         ]);
 
         try {
-            DB::beginTransaction();
-
-            $order = Order::create([
-                'user_id' => Auth::id(),
-                'fullname' => $validated['fullname'],
-                'email' => $validated['email'],
-                'shipping_address' => $validated['shipping_address'],
-                'phone' => $validated['phone'],
-                'status' => 'pending',
-                'total' => 0,
-            ]);
-
-            $total = 0;
-
-            foreach ($validated['items'] as $item) {
-                $product = Product::lockForUpdate()->find($item['product_id']);
-
-                if ($product->stock < $item['quantity']) {
-                    throw new \Exception("{$product->name} stock မလုံလောက်ပါ");
-                }
-
-                // reduce stock
-                $product->stock -= $item['quantity'];
-                $product->save();
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
-                ]);
-
-                $total += $product->price * $item['quantity'];
-            }
-
-            $order->update(['total' => $total]);
-
-            DB::commit();
+            $userId = Auth::id();
+            $order = $this->orderService->createOrder($validated, $userId);
 
             return response()->json([
                 'success' => true,
@@ -77,7 +46,6 @@ class OrderController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            DB::rollBack();
 
             return response()->json([
                 'success' => false,
@@ -88,10 +56,7 @@ class OrderController extends Controller
 
     public function myOrders()
     {
-        $orders = Order::with('items.product')
-            ->where('user_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $orders = $this->orderService->getUserOrders(Auth::id());
 
         return response()->json($orders);
     }

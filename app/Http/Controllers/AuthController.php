@@ -2,26 +2,33 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Repositories\AuthRepository;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    protected $authRepo;
+
+    protected $authService;
+
+    public function __construct(AuthRepository $authRepo, AuthService $authService)
+    {
+        $this->authRepo = $authRepo;
+        $this->authService = $authService;
+    }
+
     public function register(Request $request)
     {
-        $data = $request->validate([
+        $userData = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
         ]);
 
-        $user = User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
+        $user = $this->authRepo->createUser($userData);
 
         $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -39,43 +46,52 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('email', $data['email'])->first();
-
-        if (! $user || ! Hash::check($data['password'], $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid credentials.'],
-            ]);
-        }
-
-        // revoke old tokens (optional)
-        $user->tokens()->delete();
-
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $result = $this->authService->login($data);
 
         return response()->json([
             'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_admin'=> $user->is_admin,
-                'avatar' => $user->avatar
-                    ? asset('storage/'.$user->avatar)
+                'id' => $result['user']->id,
+                'name' => $result['user']->name,
+                'email' => $result['user']->email,
+                'is_admin' => $result['user']->is_admin,
+                'avatar' => $result['user']->avatar
+                    ? asset('storage/'.$result['user']->avatar)
                     : null,
             ],
-            'token' => $token,
+            'token' => $result['token'],
             'token_type' => 'Bearer',
         ]);
     }
 
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->currentAccessToken()?->delete();
 
-        return response()->json(['message' => 'Logged out']);
+        return response()->json(['message' => 'Logged out success.']);
     }
 
     public function me(Request $request)
     {
         return response()->json($request->user());
+    }
+
+    public function changePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (! hash::check($request->current_password, $user->password)) {
+            return response()->json(['message' => 'Current password is incorrect'], 400);
+        }
+
+        $user->password = Hash::make($request->new_password);
+
+        $user->save();
+
+        return response()->json(['message' => 'Password changed successfully']);
     }
 }

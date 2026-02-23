@@ -25,7 +25,6 @@ class Product extends Model
         if(!$this->discount_type){
             return $this->price;
         }
-
         return $this->discount_type === 'percentage'
                ? $this->price - ($this->price * $this->discount_value / 100)
                : max(0,$this->price - $this->discount_value);
@@ -40,5 +39,13 @@ class Product extends Model
        return $this->discount_type === 'percentage'
               ? "-{$this->discount_value}%"
               : "-{$this->discount_value}";
+    }
+
+    public function ratings(){
+        return $this->hasMany(Rating::class);
+    }
+
+    public function avgRating(){
+        return $this->ratings()->avg('rating') ?? 0;
     }
 }

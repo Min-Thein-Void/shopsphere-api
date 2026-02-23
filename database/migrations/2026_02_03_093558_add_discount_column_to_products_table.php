@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->enum('discount_type',['percentage','fixed'])->nullable();
-            $table->decimal('discount_value',10,2)->nullable();
+            if (! Schema::hasColumn('products', 'discount_type')) {
+                $table->enum('discount_type', ['percentage', 'fixed'])->nullable();
+            }
+            if (! Schema::hasColumn('products', 'discount_value')) {
+                $table->decimal('discount_value', 10, 2)->nullable();
+            }
         });
     }
 

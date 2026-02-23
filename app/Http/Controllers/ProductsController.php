@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Rating;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,20 @@ class ProductsController extends Controller
         return response()->json($products);
     }
 
+    public function randomProducts()
+    {
+        $randomProducts = Product::inRandomOrder()->take(3)->get();
+
+        $randomProducts->map(function($product){
+           $product->avgRatings = Rating::where('product_id',$product->id)->avg('rating');
+           return $product;
+        });
+
+        return response()->json([
+            'products' => $randomProducts,
+        ]);
+    }
+
     public function SingleProduct(Product $product)
     {
         return response()->json($product);
@@ -25,7 +40,7 @@ class ProductsController extends Controller
     {
         $categories = Category::paginate(6);
 
-        return response()->json($categories,200);
+        return response()->json($categories, 200);
     }
 
     public function search(Request $request)

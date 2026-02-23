@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\RatingController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('auth')->group(function () {
@@ -15,7 +16,10 @@ Route::prefix('auth')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/user/avatar/{id}', [ProductsController::class, 'photoUpload']);
         Route::post('/order', [OrderController::class, 'store']);
-        Route::get('/orders/my',[OrderController::class, 'myOrders']);
+        Route::get('/orders/my', [OrderController::class, 'myOrders']);
+        Route::post('/rate', [RatingController::class, 'rate']);
+        Route::get('/rating-average/{productId}', [RatingController::class, 'average']);
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
     });
 });
 
@@ -28,6 +32,8 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->group(function () {
 });
 
 Route::get('/products', [ProductsController::class, 'AllProducts']);
+
+Route::get('/random-products',[ProductsController::class, 'randomProducts']);
 
 Route::get('/product/{product}', [ProductsController::class, 'SingleProduct']);
 
