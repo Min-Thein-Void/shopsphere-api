@@ -6,23 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->enum('status', [
-                'pending',
-                'paid',
-                'shipped',
-                'completed',
-                'cancelled'
-            ])->default('pending')->change();
+            $table->string('payment_status')->default('pending');
+            $table->string('payment_method')->nullable();
+            $table->string('transaction_id')->nullable();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('status')->default('pending')->change();
+            $table->dropColumn(['payment_status','payment_method','transaction_id']);
         });
     }
 };

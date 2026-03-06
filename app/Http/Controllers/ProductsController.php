@@ -21,9 +21,10 @@ class ProductsController extends Controller
     {
         $randomProducts = Product::inRandomOrder()->take(3)->get();
 
-        $randomProducts->map(function($product){
-           $product->avgRatings = Rating::where('product_id',$product->id)->avg('rating');
-           return $product;
+        $randomProducts->map(function ($product) {
+            $product->avgRatings = Rating::where('product_id', $product->id)->avg('rating');
+
+            return $product;
         });
 
         return response()->json([
@@ -79,43 +80,6 @@ class ProductsController extends Controller
         return response()->json([
             'message' => 'Avatar uploaded successfully',
             'avatar' => asset('storage/'.$user->avatar),
-        ]);
-    }
-
-    public function setDiscount(Request $request, Product $product)
-    {
-        $request->validate([
-            'discount_type' => 'nullable|in:percentage,fixed',
-            'discount_value' => 'nullable|numeric|min:0',
-        ]);
-
-        if (! $request->discount_type) {
-            $product->update([
-                'discount_type' => null,
-                'discount_value' => null,
-            ]);
-
-            return response()->json([
-                'message' => 'discount_remove',
-                'product' => $product->fresh(),
-            ]);
-        }
-
-        if ($request->discount_type === 'percentage' &&
-    $request->discount_value > 100) {
-            return response()->json([
-                'message' => 'percentage discount cannot exceed 100',
-            ], 422);
-        }
-
-        $product->update([
-            'discount_type' => $request->discount_type,
-            'discount_value' => $request->discount_value,
-        ]);
-
-        return response()->json([
-            'message' => 'discount_updated',
-            'product' => $product->fresh(),
         ]);
     }
 }

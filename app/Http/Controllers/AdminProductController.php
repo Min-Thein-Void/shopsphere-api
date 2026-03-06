@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
+use App\Services\AdminProductService;
 use Illuminate\Http\Request;
 
 class AdminProductController extends Controller
 {
-    public function StoreProduct(Request $request)
+    protected $adminProductService;
+
+    public function __construct(AdminProductService $adminProductService)
     {
-        $formData = $request->validate(
-            [
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'price' => 'required|numeric|min:0',
-                'stock' => 'required|integer|min:0',
-                'category_id' => 'required|exists:categories,id',
-                'image' => 'image|mimes:jpg,png,jpeg,webp|max:2048',
-            ]
-        );
+        $this->adminProductService = $adminProductService;
+    }
+
+    public function StoreProduct(StoreProductRequest $request)
+    {
+        $formData = $request->validated();
 
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('products', 'public');
@@ -38,23 +39,31 @@ class AdminProductController extends Controller
         return response()->json(['message' => 'Product deleted successfully.']);
     }
 
-    public function update(Request $request, Product $product)
+    public function update(UpdateProductRequest $request, Product $product)
     {
 
-        $formDatas = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'category_id' => 'nullable|exists:categories,id',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        ]);
+        $formDatas = $request->validated();
 
         $product->update($formDatas);
 
         return response()->json([
             'message' => 'Product updated successfully.',
             'product' => $product,
+        ]);
+    }
+
+    public function setDiscount(Request $request, $id)
+    {
+        $data = $request->validate([
+            'discount_type' => 'nullable|in:percentage,fixed',
+            'discount_value' => 'nullable|numeric|min:0',
+        ]);
+
+        $product = $this->adminProductService->setDiscountLogic($data, $id);
+
+        return response()->json([
+            'message' => 'discount_updated',
+            'product' => $product->fresh(),
         ]);
     }
 }

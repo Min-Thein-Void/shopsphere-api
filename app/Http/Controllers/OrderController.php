@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOrderRequest;
 use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -18,22 +19,14 @@ class OrderController extends Controller
 
     public function index()
     {
-        $orders = Order::with(['user', 'items.product'])->get();
+        $orders = Order::with(['user', 'items.product'])->orderBy('created_at', 'desc')->get();
 
         return response()->json(['message' => 'Order list retrieved successfully', 'data' => $orders], 200);
     }
 
-    public function store(Request $request)
+    public function store(StoreOrderRequest $request)
     {
-        $validated = $request->validate([
-            'fullname' => 'required|string|max:255',
-            'email' => 'required|email',
-            'shipping_address' => 'required|string|max:500',
-            'phone' => 'required|string|max:20',
-            'items' => 'required|array|min:1',
-            'items.*.product_id' => 'required|integer|exists:products,id',
-            'items.*.quantity' => 'required|integer|min:1',
-        ]);
+        $validated = $request->validated();
 
         try {
             $userId = Auth::id();
@@ -59,5 +52,21 @@ class OrderController extends Controller
         $orders = $this->orderService->getUserOrders(Auth::id());
 
         return response()->json($orders);
+    }
+
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,shipped,delivered,cancelled',
+        ]);
+
+        $order = Order::findOrFail($id);
+        $order->status = $request->status;
+        $order->save();
+
+        return response()->json([
+            'message' => 'Order status updated',
+            'data' => $order,
+        ]);
     }
 }

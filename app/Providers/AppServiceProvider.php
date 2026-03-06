@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Test;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\ServiceProvider;
 
@@ -12,7 +13,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind('testService',function () {
+        $test = new Test();
+        dd($test->rnStr());
+    });
     }
 
     /**

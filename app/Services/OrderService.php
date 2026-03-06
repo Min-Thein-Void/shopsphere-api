@@ -46,16 +46,17 @@ class OrderService
                     throw new \Exception("{$product->name} stock မလုံလောက်ပါ");
                 }
 
-                $this->productRepo->reduceStock($product, $item['quantity']);
+                // $this->productRepo->reduceStock($product, $item['quantity']);
 
                 $this->orderRepo->createOrderItem([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
                     'quantity' => $item['quantity'],
-                    'price' => $product->price,
+                    'price' => $product->final_price,
+                    'original_price' => $product->price,
                 ]);
 
-                $total += $product->price * $item['quantity'];
+                $total += $product->final_price * $item['quantity'];
             }
 
             $this->orderRepo->updateOrderTotal($order, $total);
@@ -64,7 +65,8 @@ class OrderService
         });
     }
 
-    public function getUserOrders(int $userId){
+    public function getUserOrders(int $userId)
+    {
         return $this->orderRepo->getUserOrders($userId);
     }
 }

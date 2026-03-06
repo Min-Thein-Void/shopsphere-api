@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminProductController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\RatingController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,7 @@ Route::prefix('auth')->group(function () {
         Route::post('/rate', [RatingController::class, 'rate']);
         Route::get('/rating-average/{productId}', [RatingController::class, 'average']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/payment/fake',[PaymentController::class, 'pay']);
     });
 });
 
@@ -28,7 +30,8 @@ Route::middleware(['auth:sanctum', 'isAdmin'])->group(function () {
     Route::get('/delete/{product}', [AdminProductController::class, 'destroy']);
     Route::get('/edit/{product}', [AdminProductController::class, 'update']);
     Route::get('/orders', [OrderController::class, 'index']);
-    Route::post('/products/{product}/discount', [ProductsController::class, 'setDiscount']);
+    Route::patch('/products/{id}/discount', [AdminProductController::class, 'setDiscount']);
+    Route::patch('/orders/{id}/status', [OrderController::class, 'updateOrderStatus']);
 });
 
 Route::get('/products', [ProductsController::class, 'AllProducts']);
@@ -46,3 +49,5 @@ Route::post('/products/restore-stock', [ProductsController::class, 'restoreStock
 Route::post('/products/search', [ProductsController::class, 'search']);
 
 Route::post('/category/search', [ProductsController::class, 'searchByCategory']);
+
+
