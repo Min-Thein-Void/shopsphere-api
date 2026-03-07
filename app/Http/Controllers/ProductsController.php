@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\Rating;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -19,13 +18,10 @@ class ProductsController extends Controller
 
     public function randomProducts()
     {
-        $randomProducts = Product::inRandomOrder()->take(3)->get();
-
-        $randomProducts->map(function ($product) {
-            $product->avgRatings = Rating::where('product_id', $product->id)->avg('rating');
-
-            return $product;
-        });
+        $randomProducts = Product::withAvg('ratings', 'rating')
+            ->inRandomOrder()
+            ->take(3)
+            ->get();
 
         return response()->json([
             'products' => $randomProducts,
